@@ -25,3 +25,52 @@ AIHawk has been featured by major media outlets for revolutionizing how job seek
 [**Vanity Fair**](https://www.vanityfair.it/article/intelligenza-artificiale-candidature-di-lavoro)
 [**404 Media**](https://www.404media.co/i-applied-to-2-843-roles-the-rise-of-ai-powered-job-application-bots/)
 
+---
+
+## Backend API
+
+AIHawk includes a FastAPI backend for HTTP clients and Verity hosted audit integration.
+
+### Start the server
+
+```bash
+pip install -r requirements.txt
+python run_backend.py
+```
+
+**Local backend URL:** `http://localhost:8000`
+
+- Health check: `http://localhost:8000/health`
+- API docs: `http://localhost:8000/docs`
+
+### Verity setup
+
+Verity requires a **public HTTPS URL**. For local development, expose the server with a tunnel:
+
+```bash
+# Terminal 1
+python run_backend.py
+
+# Terminal 2 (example with ngrok)
+ngrok http 8000
+```
+
+Use the ngrok HTTPS URL (e.g. `https://abc123.ngrok.io`) as the **Backend URL** in Verity.
+
+For production, set `BACKEND_PUBLIC_URL` to your deployed origin:
+
+```bash
+export BACKEND_PUBLIC_URL=https://your-app.example.com
+python run_backend.py
+```
+
+### API endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check for Verity connectivity |
+| GET | `/api/v1/styles` | List available resume styles |
+| POST | `/api/v1/resume` | Generate base resume PDF |
+| POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |
+| POST | `/api/v1/cover-letter` | Generate cover letter (`job_url` required) |
+
