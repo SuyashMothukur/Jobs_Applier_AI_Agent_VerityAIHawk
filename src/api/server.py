@@ -1,12 +1,12 @@
 """FastAPI backend for AIHawk — exposes document generation over HTTP."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
 import config
@@ -40,13 +40,27 @@ _app_context: Optional[AppContext] = None
 
 class StyleRequest(BaseModel):
     style: Optional[str] = Field(default=None, description="Resume style name")
-    body: Optional[dict] = Field(default=None, description="Optional payload from Verity")
+    body: Optional[Any] = Field(default=None, description="Optional payload from Verity")
+
+    @field_validator("style", "body", mode="before")
+    @classmethod
+    def empty_values_to_none(cls, value: Any) -> Any:
+        if value == "" or value is None:
+            return None
+        return value
 
 
 class JobDocumentRequest(BaseModel):
-    job_url: str = Field(..., description="URL of the job posting")
+    job_url: Optional[str] = Field(default=None, description="URL of the job posting")
     style: Optional[str] = Field(default=None, description="Resume style name")
-    body: Optional[dict] = Field(default=None, description="Optional payload from Verity")
+    body: Optional[Any] = Field(default=None, description="Optional payload from Verity")
+
+    @field_validator("style", "body", "job_url", mode="before")
+    @classmethod
+    def empty_values_to_none(cls, value: Any) -> Any:
+        if value == "" or value is None:
+            return None
+        return value
 
 
 class DocumentResponse(BaseModel):
@@ -141,6 +155,8 @@ async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse
 @app.post("/api/v1/resume/tailored", response_model=DocumentResponse)
 async def create_tailored_resume(body: JobDocumentRequest) -> DocumentResponse:
     ctx = get_context()
+    if not body.job_url:
+        raise HTTPException(status_code=400, detail="job_url is required")
     try:
         _, saved_path = await run_in_threadpool(
             generate_job_tailored_resume_pdf,
@@ -166,6 +182,8 @@ async def create_tailored_resume(body: JobDocumentRequest) -> DocumentResponse:
 @app.post("/api/v1/cover-letter", response_model=DocumentResponse)
 async def create_cover_letter(body: JobDocumentRequest) -> DocumentResponse:
     ctx = get_context()
+    if not body.job_url:
+        raise HTTPException(status_code=400, detail="job_url is required")
     try:
         _, saved_path = await run_in_threadpool(
             generate_cover_letter_pdf,
