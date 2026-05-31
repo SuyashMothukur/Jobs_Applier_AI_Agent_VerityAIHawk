@@ -13,6 +13,7 @@ import config
 from main import ConfigError
 from src.app_context import AppContext, load_app_context
 from src.logging import logger
+from src.resume_schemas.resume import Resume
 from src.services.document_service import (
     generate_cover_letter_pdf,
     generate_job_tailored_resume_pdf,
@@ -39,11 +40,13 @@ _app_context: Optional[AppContext] = None
 
 class StyleRequest(BaseModel):
     style: Optional[str] = Field(default=None, description="Resume style name")
+    body: Optional[dict] = Field(default=None, description="Optional payload from Verity")
 
 
 class JobDocumentRequest(BaseModel):
     job_url: str = Field(..., description="URL of the job posting")
     style: Optional[str] = Field(default=None, description="Resume style name")
+    body: Optional[dict] = Field(default=None, description="Optional payload from Verity")
 
 
 class DocumentResponse(BaseModel):
@@ -58,11 +61,22 @@ def get_context() -> AppContext:
     return _app_context
 
 
+def _validate_resume_file(resume_path: Path) -> None:
+    """Fail fast if the configured resume YAML is invalid."""
+    try:
+        Resume(resume_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ConfigError(
+            f"Invalid resume configuration in {resume_path}: {exc}"
+        ) from exc
+
+
 @app.on_event("startup")
 def startup() -> None:
     global _app_context
     try:
         _app_context = load_app_context()
+        _validate_resume_file(_app_context.plain_text_resume_path)
         logger.info("AIHawk API started — config loaded from data_folder/")
     except (ConfigError, FileNotFoundError) as exc:
         logger.error(f"Failed to load application config: {exc}")
@@ -112,7 +126,10 @@ async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Resume generation failed")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        detail = str(exc)
+        if "parsing YAML" in detail or "validation error" in detail.lower():
+            raise HTTPException(status_code=422, detail=detail) from exc
+        raise HTTPException(status_code=500, detail=detail) from exc
 
     return DocumentResponse(
         status="success",
