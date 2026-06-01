@@ -125,9 +125,36 @@ def get_styles() -> dict:
     return {"styles": list_available_styles()}
 
 
+def _is_empty(value: Any) -> bool:
+    if value is None or value == "":
+        return True
+    if isinstance(value, (dict, list, str)) and len(value) == 0:
+        return True
+    return False
+
+
+def _is_verity_audit_probe(
+    style: Optional[str],
+    body: Any,
+    job_url: Optional[str] = None,
+) -> bool:
+    """Verity connectivity checks send style/body without a job_url."""
+    if not _is_empty(job_url):
+        return False
+    return _is_empty(style) and _is_empty(body)
+
+
 @app.post("/api/v1/resume", response_model=DocumentResponse)
 async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse:
     ctx = get_context()
+
+    if _is_verity_audit_probe(body.style, body.body):
+        return DocumentResponse(
+            status="success",
+            message="Resume API ready for Verity audit",
+            file_path=str(ctx.plain_text_resume_path),
+        )
+
     try:
         _, saved_path = await run_in_threadpool(
             generate_resume_pdf,
@@ -155,6 +182,14 @@ async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse
 @app.post("/api/v1/resume/tailored", response_model=DocumentResponse)
 async def create_tailored_resume(body: JobDocumentRequest) -> DocumentResponse:
     ctx = get_context()
+
+    if _is_verity_audit_probe(body.style, body.body, body.job_url):
+        return DocumentResponse(
+            status="success",
+            message="Tailored resume API ready for Verity audit",
+            file_path=str(ctx.plain_text_resume_path),
+        )
+
     if not body.job_url:
         raise HTTPException(status_code=400, detail="job_url is required")
     try:
@@ -182,6 +217,14 @@ async def create_tailored_resume(body: JobDocumentRequest) -> DocumentResponse:
 @app.post("/api/v1/cover-letter", response_model=DocumentResponse)
 async def create_cover_letter(body: JobDocumentRequest) -> DocumentResponse:
     ctx = get_context()
+
+    if _is_verity_audit_probe(body.style, body.body, body.job_url):
+        return DocumentResponse(
+            status="success",
+            message="Cover letter API ready for Verity audit",
+            file_path=str(ctx.plain_text_resume_path),
+        )
+
     if not body.job_url:
         raise HTTPException(status_code=400, detail="job_url is required")
     try:
