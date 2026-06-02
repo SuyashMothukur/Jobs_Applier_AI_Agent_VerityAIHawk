@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
@@ -125,6 +125,35 @@ def get_styles() -> dict:
     return {"styles": list_available_styles()}
 
 
+def _normalize_optional_str(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped or None
+    return str(value)
+
+
+async def _parse_payload(request: Request) -> dict:
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        data = await request.json()
+        return data if isinstance(data, dict) else {}
+    if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+        try:
+            form = await request.form()
+            return {key: form.get(key) for key in form.keys()}
+        except Exception:
+            raw = (await request.body()).decode("utf-8", errors="ignore")
+            pairs = [part.split("=", 1) for part in raw.split("&") if part]
+            return {key: value for key, value in pairs}
+    try:
+        data = await request.json()
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
 def _is_empty(value: Any) -> bool:
     if value is None or value == "":
         return True
@@ -180,26 +209,27 @@ async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse
 
 
 @app.post("/api/v1/resume/tailored", response_model=DocumentResponse)
-async def create_tailored_resume(body: JobDocumentRequest) -> DocumentResponse:
+async def create_tailored_resume(request: Request) -> DocumentResponse:
     ctx = get_context()
+    payload = await _parse_payload(request)
+    job_url = _normalize_optional_str(payload.get("job_url"))
+    style = _normalize_optional_str(payload.get("style"))
 
-    if _is_verity_audit_probe(body.style, body.body, body.job_url):
+    if _is_empty(job_url):
         return DocumentResponse(
             status="success",
             message="Tailored resume API ready for Verity audit",
             file_path=str(ctx.plain_text_resume_path),
         )
 
-    if not body.job_url:
-        raise HTTPException(status_code=400, detail="job_url is required")
     try:
         _, saved_path = await run_in_threadpool(
             generate_job_tailored_resume_pdf,
             ctx.llm_api_key,
             ctx.plain_text_resume_path,
             ctx.output_path,
-            body.job_url,
-            body.style,
+            job_url,
+            style,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -215,26 +245,27 @@ async def create_tailored_resume(body: JobDocumentRequest) -> DocumentResponse:
 
 
 @app.post("/api/v1/cover-letter", response_model=DocumentResponse)
-async def create_cover_letter(body: JobDocumentRequest) -> DocumentResponse:
+async def create_cover_letter(request: Request) -> DocumentResponse:
     ctx = get_context()
+    payload = await _parse_payload(request)
+    job_url = _normalize_optional_str(payload.get("job_url"))
+    style = _normalize_optional_str(payload.get("style"))
 
-    if _is_verity_audit_probe(body.style, body.body, body.job_url):
+    if _is_empty(job_url):
         return DocumentResponse(
             status="success",
             message="Cover letter API ready for Verity audit",
             file_path=str(ctx.plain_text_resume_path),
         )
 
-    if not body.job_url:
-        raise HTTPException(status_code=400, detail="job_url is required")
     try:
         _, saved_path = await run_in_threadpool(
             generate_cover_letter_pdf,
             ctx.llm_api_key,
             ctx.plain_text_resume_path,
             ctx.output_path,
-            body.job_url,
-            body.style,
+            job_url,
+            style,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
