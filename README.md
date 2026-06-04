@@ -74,3 +74,16 @@ python run_backend.py
 | POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |
 | POST | `/api/v1/cover-letter` | Generate cover letter (`job_url` required) |
 
+### Docker (optional)
+
+Run the API in a container for a stable backend URL (deploy to Railway, Render, etc.):
+
+```bash
+cp .env.example .env
+cp -r data_folder_example data_folder
+# Edit data_folder/secrets.yaml
+make docker-up
+```
+
+The API listens on `http://localhost:8001`. Set `BACKEND_PUBLIC_URL` in `.env` to your deployed URL for Verity.
+

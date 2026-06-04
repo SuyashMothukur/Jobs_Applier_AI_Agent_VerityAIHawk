@@ -1,0 +1,11 @@
+services:
+  aihawk-api:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./data_folder:/app/data_folder
+    environment:
+      - BACKEND_HOST=0.0.0.0
+      - BACKEND_PORT=8001
+      - BACKEND_PUBLIC_URL=${BACKEND_PUBLIC_URL:-http://localhost:8001}

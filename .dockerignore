@@ -1,0 +1,9 @@
+.venv
+__pycache__
+*.pyc
+.git
+.github
+data_folder/output
+job_applications
+*.md
+.cursor
