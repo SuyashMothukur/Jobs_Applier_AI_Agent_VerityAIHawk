@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
@@ -14,6 +14,7 @@ from main import ConfigError
 from src.app_context import AppContext, load_app_context
 from src.logging import logger
 from src.resume_schemas.resume import Resume
+from src.api.middleware import RequestLoggingMiddleware
 from src.services.document_service import (
     generate_cover_letter_pdf,
     generate_job_tailored_resume_pdf,
@@ -34,8 +35,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestLoggingMiddleware)
 
 _app_context: Optional[AppContext] = None
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled API error: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "detail": str(exc)},
+    )
 
 
 class StyleRequest(BaseModel):
@@ -105,7 +116,14 @@ def root() -> dict:
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "ping": f"{config.BACKEND_URL}/api/v1/ping",
     }
+
+
+@app.get("/api/v1/ping")
+def ping() -> dict:
+    """Minimal liveness probe for Verity and load balancers."""
+    return {"status": "ok", "service": "aihawk"}
 
 
 @app.get("/health")

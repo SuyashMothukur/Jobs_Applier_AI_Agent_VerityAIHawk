@@ -21,5 +21,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Prepare test data folder
+        run: |
+          if [ ! -f data_folder/secrets.yaml ]; then
+            cp -r data_folder_example data_folder
+          fi
+
       - name: Run tests
-        run: pytest 
+        run: pytest tests/ -q
