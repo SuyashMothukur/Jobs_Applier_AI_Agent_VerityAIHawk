@@ -38,10 +38,11 @@ pip install -r requirements.txt
 python run_backend.py
 ```
 
-**Local backend URL:** `http://localhost:8000`
+**Local backend URL:** `http://localhost:8001`
 
-- Health check: `http://localhost:8000/health`
-- API docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8001/health`
+- Service info: `http://localhost:8001/api/v1/info`
+- API docs: `http://localhost:8001/docs`
 
 ### Verity setup
 
@@ -69,6 +70,7 @@ python run_backend.py
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check for Verity connectivity |
+| GET | `/api/v1/info` | Service metadata and endpoint map (no secrets) |
 | GET | `/api/v1/styles` | List available resume styles |
 | POST | `/api/v1/resume` | Generate base resume PDF |
 | POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |

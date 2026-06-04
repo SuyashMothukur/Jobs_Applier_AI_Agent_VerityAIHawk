@@ -6,7 +6,7 @@ from src.utils.constants import DEBUG, ERROR, LLM_MODEL, OPENAI
 
 # HTTP API (used by Verity hosted audit and external clients)
 BACKEND_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
-BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8001"))
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "")
 BACKEND_URL = BACKEND_PUBLIC_URL or f"http://localhost:{BACKEND_PORT}"
 

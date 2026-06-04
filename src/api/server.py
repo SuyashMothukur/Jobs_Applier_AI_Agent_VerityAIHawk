@@ -14,6 +14,7 @@ from main import ConfigError
 from src.app_context import AppContext, load_app_context
 from src.logging import logger
 from src.resume_schemas.resume import Resume
+from src.api.schemas import HealthResponse, ServiceInfoResponse
 from src.services.document_service import (
     generate_cover_letter_pdf,
     generate_job_tailored_resume_pdf,
@@ -97,7 +98,7 @@ def startup() -> None:
         raise
 
 
-@app.get("/")
+@app.get("/", tags=["meta"])
 def root() -> dict:
     return {
         "service": "AIHawk",
@@ -105,22 +106,45 @@ def root() -> dict:
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "info": f"{config.BACKEND_URL}/api/v1/info",
     }
 
 
-@app.get("/health")
-def health() -> dict:
+@app.get("/health", response_model=HealthResponse, tags=["monitoring"])
+def health() -> HealthResponse:
     ctx = get_context()
-    return {
-        "status": "ok",
-        "service": "aihawk",
-        "llm_model": config.LLM_MODEL,
-        "llm_provider": config.LLM_MODEL_TYPE,
-        "resume_configured": ctx.plain_text_resume_path.exists(),
-    }
+    return HealthResponse(
+        status="ok",
+        service="aihawk",
+        llm_model=config.LLM_MODEL,
+        llm_provider=config.LLM_MODEL_TYPE,
+        resume_configured=ctx.plain_text_resume_path.exists(),
+    )
 
 
-@app.get("/api/v1/styles")
+@app.get("/api/v1/info", response_model=ServiceInfoResponse, tags=["monitoring"])
+def service_info() -> ServiceInfoResponse:
+    """Service metadata for Verity and external integrations (no secrets)."""
+    ctx = get_context()
+    return ServiceInfoResponse(
+        status="ok",
+        service="aihawk",
+        version="1.0.0",
+        backend_url=config.BACKEND_URL,
+        llm_model=config.LLM_MODEL,
+        llm_provider=config.LLM_MODEL_TYPE,
+        resume_configured=ctx.plain_text_resume_path.exists(),
+        endpoints={
+            "health": "/health",
+            "styles": "/api/v1/styles",
+            "resume": "/api/v1/resume",
+            "resume_tailored": "/api/v1/resume/tailored",
+            "cover_letter": "/api/v1/cover-letter",
+        },
+    )
+
+
+@app.get("/api/v1/styles", tags=["documents"])
 def get_styles() -> dict:
     return {"styles": list_available_styles()}
 
@@ -173,7 +197,7 @@ def _is_verity_audit_probe(
     return _is_empty(style) and _is_empty(body)
 
 
-@app.post("/api/v1/resume", response_model=DocumentResponse)
+@app.post("/api/v1/resume", response_model=DocumentResponse, tags=["documents"])
 async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse:
     ctx = get_context()
 
@@ -208,7 +232,7 @@ async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse
     )
 
 
-@app.post("/api/v1/resume/tailored", response_model=DocumentResponse)
+@app.post("/api/v1/resume/tailored", response_model=DocumentResponse, tags=["documents"])
 async def create_tailored_resume(request: Request) -> DocumentResponse:
     ctx = get_context()
     payload = await _parse_payload(request)
@@ -244,7 +268,7 @@ async def create_tailored_resume(request: Request) -> DocumentResponse:
     )
 
 
-@app.post("/api/v1/cover-letter", response_model=DocumentResponse)
+@app.post("/api/v1/cover-letter", response_model=DocumentResponse, tags=["documents"])
 async def create_cover_letter(request: Request) -> DocumentResponse:
     ctx = get_context()
     payload = await _parse_payload(request)
