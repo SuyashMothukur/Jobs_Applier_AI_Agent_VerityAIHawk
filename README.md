@@ -35,13 +35,17 @@ AIHawk includes a FastAPI backend for HTTP clients and Verity hosted audit integ
 
 ```bash
 pip install -r requirements.txt
+cp -r data_folder_example data_folder   # first-time setup
+# Edit data_folder/secrets.yaml and plain_text_resume.yaml
+python scripts/check_config.py
 python run_backend.py
 ```
 
-**Local backend URL:** `http://localhost:8000`
+**Local backend URL:** `http://localhost:8001`
 
-- Health check: `http://localhost:8000/health`
-- API docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8001/health`
+- Config validate: `http://localhost:8001/api/v1/config/validate`
+- API docs: `http://localhost:8001/docs`
 
 ### Verity setup
 
@@ -69,6 +73,7 @@ python run_backend.py
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check for Verity connectivity |
+| GET | `/api/v1/config/validate` | Validate local config (no secrets exposed) |
 | GET | `/api/v1/styles` | List available resume styles |
 | POST | `/api/v1/resume` | Generate base resume PDF |
 | POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |

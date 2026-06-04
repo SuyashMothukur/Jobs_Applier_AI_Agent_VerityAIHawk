@@ -105,6 +105,7 @@ def root() -> dict:
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "config_validate": f"{config.BACKEND_URL}/api/v1/config/validate",
     }
 
 
@@ -292,3 +293,8 @@ def download_file(file_path: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="File not found")
 
     return FileResponse(resolved, media_type="application/pdf", filename=resolved.name)
+
+
+from src.api.config_routes import router as config_router  # noqa: E402
+
+app.include_router(config_router)
