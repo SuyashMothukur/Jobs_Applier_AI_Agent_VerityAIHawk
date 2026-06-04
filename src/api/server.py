@@ -105,6 +105,7 @@ def root() -> dict:
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "audit": f"{config.BACKEND_URL}/api/v1/audit",
     }
 
 
@@ -117,6 +118,29 @@ def health() -> dict:
         "llm_model": config.LLM_MODEL,
         "llm_provider": config.LLM_MODEL_TYPE,
         "resume_configured": ctx.plain_text_resume_path.exists(),
+    }
+
+
+@app.get("/api/v1/audit")
+@app.post("/api/v1/audit")
+async def verity_audit(request: Request) -> dict:
+    """Dedicated endpoint for Verity connectivity and hosted audit checks."""
+    ctx = get_context()
+    payload = await _parse_payload(request) if request.method == "POST" else {}
+    return {
+        "status": "success",
+        "message": "AIHawk API ready for Verity audit",
+        "service": "aihawk",
+        "llm_model": config.LLM_MODEL,
+        "llm_provider": config.LLM_MODEL_TYPE,
+        "resume_configured": ctx.plain_text_resume_path.exists(),
+        "endpoints": {
+            "health": "/health",
+            "resume": "/api/v1/resume",
+            "resume_tailored": "/api/v1/resume/tailored",
+            "cover_letter": "/api/v1/cover-letter",
+        },
+        "received_keys": list(payload.keys()),
     }
 
 

@@ -38,24 +38,33 @@ pip install -r requirements.txt
 python run_backend.py
 ```
 
-**Local backend URL:** `http://localhost:8000`
+**Local backend URL:** `http://localhost:8001` (default port; override with `BACKEND_PORT`)
 
-- Health check: `http://localhost:8000/health`
-- API docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8001/health`
+- API docs: `http://localhost:8001/docs`
+- Verity audit: `http://localhost:8001/api/v1/audit`
 
 ### Verity setup
 
-Verity requires a **public HTTPS URL**. For local development, expose the server with a tunnel:
+Verity requires a **public HTTPS URL** for hosted audit integration.
+
+1. Copy `data_folder_example/` into `data_folder/` and fill in `secrets.yaml`, `work_preferences.yaml`, and `plain_text_resume.yaml`.
+2. Start the API:
 
 ```bash
-# Terminal 1
+pip install -r requirements.txt
 python run_backend.py
-
-# Terminal 2 (example with ngrok)
-ngrok http 8000
 ```
 
-Use the ngrok HTTPS URL (e.g. `https://abc123.ngrok.io`) as the **Backend URL** in Verity.
+3. Expose it publicly (Cloudflare quick tunnel):
+
+```bash
+# In a second terminal
+chmod +x scripts/expose_backend.sh
+./scripts/expose_backend.sh
+```
+
+Copy the `https://*.trycloudflare.com` URL into Verity as the **Backend URL**.
 
 For production, set `BACKEND_PUBLIC_URL` to your deployed origin:
 
@@ -64,13 +73,16 @@ export BACKEND_PUBLIC_URL=https://your-app.example.com
 python run_backend.py
 ```
 
+**Verity audit behavior:** POST requests to resume endpoints without a `job_url` return `200 OK` immediately (connectivity probe). Full PDF generation runs only when `job_url` is provided.
+
 ### API endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check for Verity connectivity |
+| GET/POST | `/api/v1/audit` | Verity connectivity and audit status |
 | GET | `/api/v1/styles` | List available resume styles |
 | POST | `/api/v1/resume` | Generate base resume PDF |
-| POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |
-| POST | `/api/v1/cover-letter` | Generate cover letter (`job_url` required) |
+| POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` for full run) |
+| POST | `/api/v1/cover-letter` | Generate cover letter (`job_url` for full run) |
 
