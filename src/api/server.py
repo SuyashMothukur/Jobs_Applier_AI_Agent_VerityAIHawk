@@ -105,6 +105,7 @@ def root() -> dict:
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "status": f"{config.BACKEND_URL}/api/v1/status",
     }
 
 
@@ -117,6 +118,26 @@ def health() -> dict:
         "llm_model": config.LLM_MODEL,
         "llm_provider": config.LLM_MODEL_TYPE,
         "resume_configured": ctx.plain_text_resume_path.exists(),
+    }
+
+
+@app.get("/api/v1/status")
+def api_status() -> dict:
+    """Lightweight status payload for external monitors and Verity."""
+    ctx = get_context()
+    return {
+        "status": "ok",
+        "service": "aihawk",
+        "version": "1.0.0",
+        "backend_url": config.BACKEND_URL,
+        "resume_configured": ctx.plain_text_resume_path.exists(),
+        "endpoints": {
+            "health": "/health",
+            "styles": "/api/v1/styles",
+            "resume": "/api/v1/resume",
+            "resume_tailored": "/api/v1/resume/tailored",
+            "cover_letter": "/api/v1/cover-letter",
+        },
     }
 
 

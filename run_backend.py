@@ -7,8 +7,9 @@ import config
 
 def main() -> None:
     print(f"Starting AIHawk backend at {config.BACKEND_URL}")
-    print(f"API docs: {config.BACKEND_URL}/docs")
-    print(f"Health check: {config.BACKEND_URL}/health")
+    print(f"API docs:  {config.BACKEND_URL}/docs")
+    print(f"Health:    {config.BACKEND_URL}/health")
+    print(f"Status:    {config.BACKEND_URL}/api/v1/status")
     uvicorn.run(
         "src.api.server:app",
         host=config.BACKEND_HOST,
