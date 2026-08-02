@@ -105,6 +105,7 @@ def root() -> dict:
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "verity_ready": f"{config.BACKEND_URL}/api/v1/verity/ready",
     }
 
 
@@ -117,6 +118,38 @@ def health() -> dict:
         "llm_model": config.LLM_MODEL,
         "llm_provider": config.LLM_MODEL_TYPE,
         "resume_configured": ctx.plain_text_resume_path.exists(),
+    }
+
+
+@app.get("/api/v1/verity/ready")
+def verity_ready() -> dict:
+    """Report whether this backend is ready for Verity hosted audit integration."""
+    ctx = get_context()
+    resume_ok = ctx.plain_text_resume_path.exists()
+    checks = {
+        "backend_running": True,
+        "resume_configured": resume_ok,
+        "llm_provider_set": bool(config.LLM_MODEL_TYPE),
+        "llm_model_set": bool(config.LLM_MODEL),
+        "work_preferences_loaded": bool(ctx.work_preferences),
+    }
+    ready = all(checks.values())
+    return {
+        "status": "ready" if ready else "not_ready",
+        "service": "aihawk",
+        "ready_for_verity": ready,
+        "checks": checks,
+        "suggested_backend_paths": {
+            "health": "/health",
+            "resume": "/api/v1/resume",
+            "resume_tailored": "/api/v1/resume/tailored",
+            "cover_letter": "/api/v1/cover-letter",
+        },
+        "message": (
+            "Backend is ready for Verity hosted audit"
+            if ready
+            else "Complete local data_folder setup before connecting Verity"
+        ),
     }
 
 
