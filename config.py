@@ -10,6 +10,9 @@ BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "")
 BACKEND_URL = BACKEND_PUBLIC_URL or f"http://localhost:{BACKEND_PORT}"
 
+# Public API version string used in responses and Verity integrations
+API_VERSION = os.getenv("API_VERSION", "1.0.0")
+
 #config related to logging must have prefix LOG_
 LOG_LEVEL = 'ERROR'
 LOG_SELENIUM_LEVEL = ERROR

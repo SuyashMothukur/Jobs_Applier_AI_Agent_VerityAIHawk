@@ -69,6 +69,7 @@ python run_backend.py
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check for Verity connectivity |
+| GET | `/api/v1/version` | API and LLM model version metadata |
 | GET | `/api/v1/styles` | List available resume styles |
 | POST | `/api/v1/resume` | Generate base resume PDF |
 | POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |

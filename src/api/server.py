@@ -14,6 +14,7 @@ from main import ConfigError
 from src.app_context import AppContext, load_app_context
 from src.logging import logger
 from src.resume_schemas.resume import Resume
+from src.api.headers import ApiHeadersMiddleware
 from src.services.document_service import (
     generate_cover_letter_pdf,
     generate_job_tailored_resume_pdf,
@@ -24,7 +25,7 @@ from src.services.document_service import (
 app = FastAPI(
     title="AIHawk API",
     description="HTTP API for AI-powered resume and cover letter generation.",
-    version="1.0.0",
+    version=config.API_VERSION,
 )
 
 app.add_middleware(
@@ -34,6 +35,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(ApiHeadersMiddleware)
 
 _app_context: Optional[AppContext] = None
 
@@ -101,10 +103,23 @@ def startup() -> None:
 def root() -> dict:
     return {
         "service": "AIHawk",
-        "version": "1.0.0",
+        "version": config.API_VERSION,
         "backend_url": config.BACKEND_URL,
         "docs": f"{config.BACKEND_URL}/docs",
         "health": f"{config.BACKEND_URL}/health",
+        "version_url": f"{config.BACKEND_URL}/api/v1/version",
+    }
+
+
+@app.get("/api/v1/version")
+def api_version() -> dict:
+    """Return API and model metadata for Verity and external clients."""
+    return {
+        "status": "ok",
+        "service": "aihawk",
+        "api_version": config.API_VERSION,
+        "llm_provider": config.LLM_MODEL_TYPE,
+        "llm_model": config.LLM_MODEL,
     }
 
 
