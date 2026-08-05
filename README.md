@@ -74,3 +74,6 @@ python run_backend.py
 | POST | `/api/v1/resume/tailored` | Generate job-tailored resume (`job_url` required) |
 | POST | `/api/v1/cover-letter` | Generate cover letter (`job_url` required) |
 
+Document generation POSTs (`/api/v1/resume*`, `/api/v1/cover-letter`) are rate-limited
+(default `30` requests / `60` seconds per client). Override with `RATE_LIMIT_REQUESTS`
+and `RATE_LIMIT_WINDOW_SECONDS`. Health checks are not rate-limited.
