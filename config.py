@@ -10,6 +10,10 @@ BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "")
 BACKEND_URL = BACKEND_PUBLIC_URL or f"http://localhost:{BACKEND_PORT}"
 
+# Simple API rate limits for expensive document generation endpoints
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "30"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+
 #config related to logging must have prefix LOG_
 LOG_LEVEL = 'ERROR'
 LOG_SELENIUM_LEVEL = ERROR

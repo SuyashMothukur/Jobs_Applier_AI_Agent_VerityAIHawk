@@ -14,6 +14,7 @@ from main import ConfigError
 from src.app_context import AppContext, load_app_context
 from src.logging import logger
 from src.resume_schemas.resume import Resume
+from src.api.rate_limit import RateLimitMiddleware
 from src.services.document_service import (
     generate_cover_letter_pdf,
     generate_job_tailored_resume_pdf,
@@ -34,6 +35,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware)
 
 _app_context: Optional[AppContext] = None
 
@@ -117,6 +119,10 @@ def health() -> dict:
         "llm_model": config.LLM_MODEL,
         "llm_provider": config.LLM_MODEL_TYPE,
         "resume_configured": ctx.plain_text_resume_path.exists(),
+        "rate_limit": {
+            "requests": config.RATE_LIMIT_REQUESTS,
+            "window_seconds": config.RATE_LIMIT_WINDOW_SECONDS,
+        },
     }
 
 
