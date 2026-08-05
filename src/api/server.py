@@ -195,22 +195,39 @@ def _is_empty(value: Any) -> bool:
     return False
 
 
+def _known_styles() -> set[str]:
+    return set(list_available_styles().keys())
+
+
 def _is_verity_audit_probe(
     style: Optional[str],
     body: Any,
     job_url: Optional[str] = None,
 ) -> bool:
-    """Verity connectivity checks send style/body without a job_url."""
+    """Verity connectivity checks send style/body without a job_url.
+
+    Verity often sends placeholder style names (e.g. ``professional``) that are
+    not part of this app's resume styles. Treat those as audit probes.
+    """
     if not _is_empty(job_url):
         return False
-    return _is_empty(style) and _is_empty(body)
+    if _is_empty(style) and _is_empty(body):
+        return True
+    if _is_empty(body) and (style is None or style not in _known_styles()):
+        return True
+    if style is not None and style not in _known_styles():
+        return True
+    return False
 
 
 @app.post("/api/v1/resume", response_model=DocumentResponse)
-async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse:
+async def create_resume(request: Request) -> DocumentResponse:
     ctx = get_context()
+    payload = await _parse_payload(request)
+    style = _normalize_optional_str(payload.get("style"))
+    body = payload.get("body")
 
-    if _is_verity_audit_probe(body.style, body.body):
+    if _is_verity_audit_probe(style, body):
         return DocumentResponse(
             status="success",
             message="Resume API ready for Verity audit",
@@ -223,7 +240,7 @@ async def create_resume(body: StyleRequest = StyleRequest()) -> DocumentResponse
             ctx.llm_api_key,
             ctx.plain_text_resume_path,
             ctx.output_path,
-            body.style,
+            style,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
