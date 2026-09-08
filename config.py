@@ -5,6 +5,7 @@ import os
 from src.utils.constants import DEBUG, ERROR, LLM_MODEL, OPENAI
 
 # HTTP API (used by Verity hosted audit and external clients)
+# Friendly local defaults for development.
 BACKEND_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "")
