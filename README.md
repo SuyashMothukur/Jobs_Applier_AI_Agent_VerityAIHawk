@@ -40,6 +40,8 @@ python run_backend.py
 
 **Local backend URL:** `http://localhost:8000`
 
+Default local port can be overridden with `BACKEND_PORT`.
+
 - Health check: `http://localhost:8000/health`
 - API docs: `http://localhost:8000/docs`
 
